@@ -4,6 +4,8 @@
 #include <sourcemod>
 #include <tf2_stocks>
 
+int ownerOffset;
+int MaxEntities;
 
 bool blueOffclassing = false;
 bool redOffclassing = false;
@@ -43,6 +45,12 @@ public void OnPluginStart() {
 	offclassMenuBuilder();
 	//Commands
 	RegAdminCmd("sm_offclass", Command_OffclassMenu, ADMFLAG_GENERIC, "Offclass control menu");
+	//Offset
+	MaxEntities = GetMaxEntities();
+	ownerOffset = FindSendPropInfo("CBaseObject", "m_hBuilder");
+	if (ownerOffset == -1)
+		SetFailState("Could not find offset");
+	
 }
 
 
@@ -177,10 +185,23 @@ public Action killPlayer(Handle timer, int client) {
 	if (checkClass(team, class)) {
 		ForcePlayerSuicide(client);
 		PrintToChat(client, "\x04[OffClasser] \x070080ff You did not change your class in time!");
+		if (class == TFClass_Engineer)destroyBuildings(client);
 	}
 }
 
-
+public void destroyBuildings(int client) {
+	for (int i = MaxClients + 1; i <= MaxEntities; i++) {
+		if (!IsValidEntity(i))continue;
+		char netclass[32];
+		GetEntityNetClass(i, netclass, sizeof(netclass));
+		if (strcmp(netclass, "CObjectSentrygun") == 0 || strcmp(netclass, "CObjectDispenser") == 0 || strcmp(netclass, "CObjectTeleporter") == 0) {
+			if (GetEntDataEnt2(i, ownerOffset) == client) {
+				SetVariantInt(9999);
+				AcceptEntityInput(i, "RemoveHealth");
+			}
+		}
+	}
+}
 //shoutout to TheXeon for giving me this snippet like a year ago <3
 public bool IsValidClient(int client) {
 	if (client > 4096) client = EntRefToEntIndex(client);
