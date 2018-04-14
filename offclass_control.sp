@@ -42,7 +42,7 @@ public void OnPluginStart() {
 	offclassMenu.SetTitle("Offclass Control");
 	offclassMenuBuilder();
 	//Commands
-	RegConsoleCmd("sm_offclass", Command_OffclassMenu);
+	RegAdminCmd("sm_offclass", Command_OffclassMenu, ADMFLAG_GENERIC, "Offclass control menu");
 }
 
 
