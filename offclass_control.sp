@@ -10,7 +10,7 @@ int MaxEntities;
 bool blueOffclassing = false;
 bool redOffclassing = false;
 
-ConVar pluginEnabled, pyroEnabled, heavyEnabled, engiEnabled;
+ConVar pluginEnabled, pyroEnabled, heavyEnabled, engiEnabled, sniperEnabled, spyEnabled;
 
 Menu offclassMenu;
 
@@ -34,17 +34,22 @@ public void OnPluginStart() {
 	pluginEnabled = CreateConVar("sm_offclassing_enabled", "0", "Enables/Disables the offclasser plugin");
 	pyroEnabled = CreateConVar("sm_offclassing_pyro", "0", "Enables/Disables offclassing to pyro");
 	heavyEnabled = CreateConVar("sm_offclassing_heavy", "0", "Enables/Disables offclassing to heavy");
-	engiEnabled = CreateConVar("sm_offclassing_engi", "0", "Enables/Disables offclassing to engi");
+	engiEnabled = CreateConVar("sm_offclassing_engineer", "0", "Enables/Disables offclassing to engi");
+	sniperEnabled = CreateConVar("sm_offclassing_sniper", "1", "Enables/disables offclassing as sniper to mid");
+	spyEnabled = CreateConVar("sm_offclassing_spy", "0", "Enables/disables offclassing as spy to mid");
 	pluginEnabled.AddChangeHook(OnConVarChange);
 	pyroEnabled.AddChangeHook(OnConVarChange);
 	heavyEnabled.AddChangeHook(OnConVarChange);
 	engiEnabled.AddChangeHook(OnConVarChange);
+	sniperEnabled.AddChangeHook(OnConVarChange);
+	spyEnabled.AddChangeHook(OnConVarChange);
 	//Menu
 	offclassMenu = new Menu(OffclassMenuHandler);
 	offclassMenu.SetTitle("Offclass Control");
 	offclassMenuBuilder();
 	//Commands
 	RegAdminCmd("sm_offclass", Command_OffclassMenu, ADMFLAG_GENERIC, "Offclass control menu");
+	RegConsoleCmd("sm_test", TEST);
 	//Offset
 	MaxEntities = GetMaxEntities();
 	ownerOffset = FindSendPropInfo("CBaseObject", "m_hBuilder");
@@ -52,7 +57,9 @@ public void OnPluginStart() {
 		SetFailState("Could not find offset");
 	
 }
-
+public Action TEST(int client, int args) {
+	PrintToChatAll("b %d r %d", blueOffclassing, redOffclassing);
+}
 
 /***HOOKS***/
 
@@ -149,8 +156,8 @@ public void resetClasses() {
 			TFClassType class = TF2_GetPlayerClass(i);
 			TFTeam playerTeam = view_as<TFTeam>(GetClientTeam(i));
 			if (checkClass(playerTeam, class)) {
-				PrintToChat(i, "\x04[OffClasser] \x070080ff You have 30 seconds to change back to an offensive class!");
-				CreateTimer(30.0, killPlayer, i)
+				PrintToChat(i, "\x04[OffClasser] \x070080ff You have 25 seconds to change back to an offensive class!");
+				CreateTimer(25.0, killPlayer, i)
 			}
 		}
 	}
@@ -163,11 +170,15 @@ public bool checkClass(TFTeam team, TFClassType class) {
 		if (class == TFClass_Pyro && !pyroEnabled.BoolValue)return true;
 		if (class == TFClass_Heavy && !heavyEnabled.BoolValue)return true;
 		if (class == TFClass_Engineer && !engiEnabled.BoolValue)return true;
+		if (class == TFClass_Sniper && !sniperEnabled.BoolValue)return true;
+		if (class == TFClass_Spy && !spyEnabled.BoolValue)return true;
 	}
 	else if(team == TFTeam_Red && !redOffclassing) {
 		if (class == TFClass_Pyro && !pyroEnabled.BoolValue)return true;
 		if (class == TFClass_Heavy && !heavyEnabled.BoolValue)return true;
 		if (class == TFClass_Engineer && !engiEnabled.BoolValue)return true;
+		if (class == TFClass_Sniper && !sniperEnabled.BoolValue)return true;
+		if (class == TFClass_Spy && !spyEnabled.BoolValue)return true;
 	}
 	return false;
 }
@@ -244,19 +255,33 @@ public int OffclassMenuHandler(Menu menu, MenuAction action, int param1, int par
 			offclassMenuBuilder()
 			offclassMenu.Display(param1, MENU_TIME_FOREVER);
 		}
+		if(StrEqual("sniperenabled", info)) {
+			sniperEnabled.SetInt(!sniperEnabled.BoolValue);
+			offclassMenuBuilder()
+			offclassMenu.Display(param1, MENU_TIME_FOREVER);
+		}
+		if(StrEqual("spyenabled", info)) {
+			spyEnabled.SetInt(!spyEnabled.BoolValue);
+			offclassMenuBuilder()
+			offclassMenu.Display(param1, MENU_TIME_FOREVER);
+		}
 	}
 }
 
 
 public void offclassMenuBuilder() {
 	offclassMenu.RemoveAllItems();
-	char pluginEnable[64], pyroEnable[64], heavyEnable[64], engiEnable[64];
+	char pluginEnable[64], pyroEnable[64], heavyEnable[64], engiEnable[64], sniperEnable[64], spyEnable[64];
 	Format(pluginEnable, sizeof(pluginEnable), "Allow all offclassing: %s", pluginEnabled.BoolValue ? "Enabled" : "Disabled");
 	Format(pyroEnable, sizeof(pyroEnable), "Pyro offclassing: %s", pyroEnabled.BoolValue ? "Enabled" : "Disabled");
 	Format(heavyEnable, sizeof(heavyEnable), "Heavy offclassing: %s", heavyEnabled.BoolValue ? "Enabled" : "Disabled");
 	Format(engiEnable, sizeof(engiEnable), "Engineer offclassing: %s", engiEnabled.BoolValue ? "Enabled" : "Disabled");
+	Format(sniperEnable, sizeof(sniperEnable), "Sniper to mid: %s", sniperEnabled.BoolValue ? "Enabled" : "Disabled");
+	Format(spyEnable, sizeof(spyEnable), "Spy to mid: %s", spyEnabled.BoolValue ? "Enabled" : "Disabled");
 	offclassMenu.AddItem("pluginenabled", pluginEnable);
 	offclassMenu.AddItem("pyroenabled", pyroEnable);
 	offclassMenu.AddItem("heavyenabled", heavyEnable);
 	offclassMenu.AddItem("engienabled", engiEnable);
+	offclassMenu.AddItem("sniperenabled", sniperEnable);
+	offclassMenu.AddItem("spyenabled", spyEnable);
 }
